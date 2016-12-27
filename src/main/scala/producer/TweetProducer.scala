@@ -26,9 +26,9 @@ object TweetProducer {
     props.put("metadata.broker.list", brokers)
     props.put("bootstrap.servers", brokers)
     props.put("acks", "all")
-    //props.put("retries", 0)
-    //props.put("batch.size", 16384)
-    //props.put("linger.ms", 10)
+    props.put("retries", "0")
+    props.put("batch.size", "15")
+    props.put("linger.ms", "10")
     //props.put("buffer.memory", 33554432)
 
     props.put("client.id", "TweetProducer")
@@ -39,6 +39,12 @@ object TweetProducer {
 
   }
 
+  /**
+    * This function build the twitter streams and put the tweet in queue
+    * @param twitterConfig Twitter oAuth config
+    * @param queue Twitter queue to store tweet locally
+    * @return
+    */
   def buildTwitterStream(twitterConfig : List[String], queue : LinkedBlockingQueue[Status]) = {
 
     val consumerKey = twitterConfig(0)
@@ -76,6 +82,11 @@ object TweetProducer {
     twitterStream
   }
 
+  /**
+    * This function build the Tweet Stream Listener and add the tweet in the queue.
+    * @param queue
+    * @return
+    */
   def buildStatusListener(queue : LinkedBlockingQueue[Status]) : StatusListener = {
 
     val listener = new StatusListener {
@@ -116,8 +127,10 @@ object TweetProducer {
       if(tweet == null){
         Thread.sleep(1000)
       }else{
+        // All the Hashtags in the tweet
         for(hashtag <- tweet.getHashtagEntities){
           println(hashtag.getText)
+          // Send Twitter to Kafka Broker
           producer.send(new ProducerRecord[String, String](topic, Integer.toString(index), hashtag.getText))
           index += 1
         }
